@@ -1,0 +1,44 @@
+# ===== BIBLIOTECAS ESSENCIAIS OBRIGATÓRIAS =====
+requests>=2.31.0           # Para fazer requisições HTTP à API
+pandas>=2.0.0              # Manipulação e análise de dados
+
+# ===== PARQUET (OBRIGATÓRIO PELO PROJETO) =====
+# Tente instalar na seguinte ordem:
+pyarrow>=13.0.0            # Primeira opção para Parquet
+# OU se der erro:
+# fastparquet>=2023.8.0    # Alternativa para Parquet
+
+# ===== CONFIGURAÇÃO E AMBIENTE =====
+python-dotenv>=1.0.0       # Para carregar variáveis de ambiente (.env)
+pyyaml>=6.0.0              # Para arquivos de configuração YAML
+
+# ===== LLM (OBRIGATÓRIO) =====
+openai>=1.0.0              # Para integração com ChatGPT
+
+# ===== LOGGING ESTRUTURADO (OBRIGATÓRIO) =====
+structlog>=23.0.0          # Logging estruturado conforme especificação
+
+# ===== VALIDAÇÃO DE DADOS =====
+pydantic>=2.0.0            # Validação de dados estruturados
+
+# ===== TESTES UNITÁRIOS (OBRIGATÓRIO) =====
+pytest>=7.0.0             # Framework de testes
+pytest-mock>=3.0.0        # Mocking para testes
+pytest-cov>=4.0.0         # Coverage de testes
+
+# ===== BANCO RELACIONAL (OPCIONAL - conforme anexo) =====
+# Descomente se quiser usar banco:
+# sqlalchemy>=2.0.0        # ORM para bancos de dados
+# psycopg2-binary>=2.9.0   # Driver PostgreSQL
+# pymysql>=1.1.0           # Driver MySQL
+
+# ===== UTILIDADES =====
+python-dateutil>=2.8.0    # Manipulação de datas
+schedule>=1.2.0           # Para agendamento (se quiser automatizar)
+
+# ===== DESENVOLVIMENTO E FORMATAÇÃO =====
+black>=23.0.0             # Formatador de código (boa prática)
+flake8>=6.0.0             # Linter de código (boa prática)
+
+# ===== DASHBOARD (OPCIONAL - mas dá pontos extras) =====
+# streamlit>=1.26.0        # Para dashboard simples (pontos de criatividade)

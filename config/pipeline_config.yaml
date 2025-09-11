@@ -1,0 +1,88 @@
+# Configurações do Pipeline de Cotações Cambiais
+
+# Configurações da API
+api:
+  exchange_rate:
+    base_url: "https://v6.exchangerate-api.com/v6"
+    timeout: 30
+    retry_attempts: 3
+    retry_delay: 5
+
+# Configurações de moedas
+currencies:
+  base: "USD"
+  targets:
+    - "BRL"  # Real Brasileiro
+    - "EUR"  # Euro
+    - "GBP"  # Libra Esterlina
+    - "JPY"  # Iene Japonês
+    - "CAD"  # Dólar Canadense
+    - "AUD"  # Dólar Australiano
+    - "CHF"  # Franco Suíço
+    - "CNY"  # Yuan Chinês
+
+# Configurações de dados
+data:
+  raw:
+    path: "data/raw"
+    format: "json"
+    compression: null
+    
+  silver:
+    path: "data/silver"
+    format: "parquet"
+    compression: "snappy"
+    
+  gold:
+    path: "data/gold"
+    format: "parquet"
+    compression: "snappy"
+    
+  retention_days: 90
+
+# Configurações de validação
+validation:
+  min_rate: 0.0001
+  max_rate: 1000000
+  required_fields:
+    - "base_code"
+    - "target_code"
+    - "conversion_rate"
+    - "time_last_update_unix"
+
+# Configurações de logging
+logging:
+  level: "INFO"
+  format: "json"
+  handlers:
+    - "console"
+    - "file"
+  file:
+    path: "logs"
+    max_size_mb: 100
+    backup_count: 5
+
+# Configurações da LLM
+llm:
+  provider: "openai"
+  model: "gpt-3.5-turbo"
+  temperature: 0.3
+  max_tokens: 500
+  prompts:
+    daily_summary: |
+      Você é um analista financeiro experiente. Analise os dados de cotações cambiais fornecidos e crie um resumo executivo conciso em português brasileiro.
+      
+      Inclua:
+      1. Principais movimentações das moedas
+      2. Destaques de valorização/desvalorização
+      3. Contexto para decisões de negócio
+      4. Alertas importantes
+      
+      Mantenha linguagem clara e acessível para executivos.
+
+# Configurações do pipeline
+pipeline:
+  schedule: "0 8 * * *"  # Todo dia às 8h (cron format)
+  batch_size: 1000
+  parallel_processing: true
+  max_workers: 4
