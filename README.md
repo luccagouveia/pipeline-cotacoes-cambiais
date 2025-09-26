@@ -224,51 +224,98 @@ llm:
 
 ## 🔄 Fluxo do Pipeline
 
-### 1. **Ingestão (Ingest)**
-- Coleta dados da Exchange Rate API
-- Salva resposta JSON bruta em `/data/raw/`
-- Nomenclatura: `YYYY-MM-DD.json`
-- Configuração via `.env`, sem hardcode
+### 1. **Ingestão (Ingest)** ✅ IMPLEMENTADO
+- ✅ Coleta dados da Exchange Rate API
+- ✅ Sistema de retry com 3 tentativas e delay configurável
+- ✅ Validação robusta da resposta da API
+- ✅ Salva resposta JSON bruta em `/data/raw/` com nomenclatura YYYY-MM-DD
+- ✅ Logging estruturado com rastreamento completo
+- ✅ Configuração via `.env`, sem hardcode de chaves/API
+- ✅ Error handling para timeouts, conexão e erros HTTP
+- ✅ Metadados do pipeline incluídos nos dados salvos
 
-### 2. **Transformação (Transform)**
-- Normaliza dados (moeda, taxa, base_currency, timestamp)
-- Aplica validações de qualidade (taxas não negativas/nulas)
-- Armazena em `/data/silver/` em formato Parquet
+**Arquivos Gerados:**
+- `data/raw/2025-09-11.json` (exemplo real)
+- `logs/pipeline_20250911.log`
 
-### 3. **Carga (Load)**
-- Processa dados finais para `/data/gold/` em Parquet
-- Estrutura otimizada para análise
-- (Opcional) Carregamento em banco relacional
+**Classes Principais:**
+- `ExchangeRateAPIClient`: Cliente da API com retry logic
+- `DataIngester`: Orquestrador da coleta e armazenamento
 
-### 4. **Enriquecimento com LLM**
-- Integração com ChatGPT para análise dos dados
-- Geração de insights executivos em português
-- Explicações em linguagem natural para usuários de negócio
-- Armazenamento de relatórios em `/outputs/reports/`
+### 2. **Transformação (Transform)** 🔄 PRÓXIMA FASE
+- Normalizar os dados (moeda, taxa, base_currency, timestamp)
+- Garantir qualidade (nenhuma taxa negativa ou nula)
+- Armazenar em `/data/silver/` em formato Parquet
 
-### 5. **Observabilidade**
-- Logging estruturado com `structlog`
-- Testes unitários com `pytest`
-- Validação de dados com `pydantic`
+### 3. **Carga (Load)** 🔄 FASE 4
+- Gravar dados finais em formato Parquet em `/data/gold/`
+- (Opcional) Carregar também em banco relacional (Postgres/MySQL)
+
+### 4. **Enriquecimento com LLM** 🔄 FASE 5
+Usar o ChatGPT para interpretar as cotações e gerar um resumo em linguagem natural:
+- "O Euro está 5% mais valorizado em relação ao mês passado."
+- "A volatilidade do JPY em relação ao USD está acima da média."
+- Criação de Explicações para Usuários de Negócio
+
+### 5. **Testes e Observabilidade** ✅ IMPLEMENTADO PARCIALMENTE
+- ✅ Testes unitários com pytest e mocking
+- ✅ Logging estruturado durante ingestão e transformação com structlog
+- ✅ Níveis de log configuráveis (INFO, DEBUG, ERROR)
+- ✅ Logs salvos em arquivo com rotação diária
+- 🔄 Logging do prompt/response do ChatGPT (Fase 5)
 
 ---
 
 ## 🚀 Como Executar
 
-### Execução Manual
+### Execução do Pipeline
+
+#### Execução Completa
 ```bash
 # Ativar ambiente virtual
 venv\Scripts\activate  # Windows
 # source venv/bin/activate  # Linux/Mac
 
-# Executar pipeline completo
+# Pipeline completo para hoje
 python main.py
 
-# Executar módulos específicos
-python -m src.ingest.exchange_api
-python -m src.transform.data_processor
-python -m src.load.parquet_writer
-python -m src.llm.insight_generator
+# Pipeline com logs detalhados
+python main.py --log-level DEBUG
+```
+
+#### Execução por Estágios
+```bash
+# Apenas ingestão de dados
+python main.py --stage ingest
+
+# Para uma data específica
+python main.py --stage ingest --date 2024-01-15
+
+# Com moeda base diferente
+python main.py --stage ingest --currency EUR
+
+# Transformação (Fase 3)
+python main.py --stage transform
+
+# Carga (Fase 4) 
+python main.py --stage load
+
+# Insights com LLM (Fase 5)
+python main.py --stage llm
+```
+
+#### Opções de Linha de Comando
+```bash
+# Ajuda completa
+python main.py --help
+
+# Opções disponíveis:
+--stage {ingest,transform,load,llm,all}  # Estágio a executar
+--date YYYY-MM-DD                       # Data específica
+--currency XXX                          # Moeda base (padrão: USD)  
+--log-level {DEBUG,INFO,WARNING,ERROR}  # Nível de log
+--log-format {console,json}             # Formato dos logs
+--output-path PATH                      # Caminho base dos dados
 ```
 
 ### Testes
@@ -280,42 +327,81 @@ pytest
 pytest --cov=src
 
 # Executar testes específicos
-pytest tests/unit/test_ingest.py
+pytest tests/unit/test_ingest.py -v
+
+# Executar com logs detalhados
+pytest tests/unit/test_ingest.py -v -s --log-cli-level=DEBUG
+```
+
+### Estrutura dos Logs
+```bash
+# Logs são salvos em logs/pipeline_YYYYMMDD.log
+tail -f logs/pipeline_$(date +%Y%m%d).log
+
+# Logs em tempo real no console (formato colorido)
+python main.py --log-format console --log-level INFO
+
+# Logs estruturados em JSON (produção)
+python main.py --log-format json --log-level INFO
 ```
 
 ---
 
 ## 📊 Estrutura dos Dados
 
-### Raw Layer (`/data/raw/`)
+### Raw Layer (`/data/raw/`) ✅ IMPLEMENTADO
+Estrutura atual dos arquivos salvos:
 ```json
 {
-  "result": "success",
-  "documentation": "https://www.exchangerate-api.com/docs",
-  "terms_of_use": "https://www.exchangerate-api.com/terms",
-  "time_last_update_unix": 1694592001,
-  "time_last_update_utc": "Wed, 13 Sep 2023 00:00:01 +0000",
-  "time_next_update_unix": 1694678401,
-  "time_next_update_utc": "Thu, 14 Sep 2023 00:00:01 +0000",
-  "base_code": "USD",
-  "conversion_rates": {
-    "BRL": 4.9234,
-    "EUR": 0.8421,
-    "GBP": 0.7901,
-    "JPY": 149.52
+  "pipeline_metadata": {
+    "collection_timestamp": "2025-09-11T19:52:11.644833",
+    "collection_date": "2025-09-11",
+    "base_currency": "USD", 
+    "pipeline_version": "1.0.0"
+  },
+  "api_response": {
+    "result": "success",
+    "documentation": "https://www.exchangerate-api.com/docs",
+    "terms_of_use": "https://www.exchangerate-api.com/terms",
+    "time_last_update_unix": 1726012801,
+    "time_last_update_utc": "Thu, 11 Sep 2025 00:00:01 +0000",
+    "time_next_update_unix": 1726099201,
+    "time_next_update_utc": "Fri, 12 Sep 2025 00:00:01 +0000",
+    "base_code": "USD",
+    "conversion_rates": {
+      "BRL": 5.5432,
+      "EUR": 0.9012,
+      "GBP": 0.7634,
+      "JPY": 143.21,
+      "CAD": 1.3567,
+      "AUD": 1.4923,
+      "CHF": 0.8445,
+      "CNY": 7.2348
+      // ... mais 155 moedas
+    }
   }
 }
 ```
 
-### Silver Layer (`/data/silver/`)
+**Características:**
+- ✅ **163 moedas** coletadas em tempo real
+- ✅ Metadados do pipeline incluídos
+- ✅ Timestamp de coleta preciso
+- ✅ Resposta original preservada  
+- ✅ Nomenclatura padronizada: `YYYY-MM-DD.json`
+- ✅ Encoding UTF-8 para caracteres especiais
+
+### Silver Layer (`/data/silver/`) 🔄 PRÓXIMA FASE
+Estrutura planejada após transformação:
 ```
 | base_currency | target_currency | exchange_rate | timestamp           | date       |
 |---------------|-----------------|---------------|---------------------|------------|
-| USD           | BRL             | 4.9234        | 2023-09-13 00:00:01 | 2023-09-13 |
-| USD           | EUR             | 0.8421        | 2023-09-13 00:00:01 | 2023-09-13 |
+| USD           | BRL             | 5.5432        | 2025-09-11 00:00:01 | 2025-09-11 |
+| USD           | EUR             | 0.9012        | 2025-09-11 00:00:01 | 2025-09-11 |
 ```
 
-### Gold Layer (`/data/gold/`)
+### Gold Layer (`/data/gold/`) 🔄 FASE 4
+Estrutura planejada final:
 - Dados otimizados em Parquet
 - Particionado por data para performance
 - Métricas calculadas (variação %, volatilidade)
@@ -325,46 +411,108 @@ pytest tests/unit/test_ingest.py
 
 ## 🤖 Integração com LLM
 
+### Status: 🔄 FASE 5 - Planejada
+
 ### Prompts Configurados
-
-#### Resumo Diário Executivo
+```yaml
+# Em config/pipeline_config.yaml
+llm:
+  provider: "openai"
+  model: "gpt-3.5-turbo"  
+  temperature: 0.3
+  max_tokens: 500
+  prompts:
+    daily_summary: |
+      Você é um analista financeiro experiente. Analise os dados de cotações 
+      cambiais fornecidos e crie um resumo executivo conciso em português brasileiro.
+      
+      Inclua:
+      1. Principais movimentações das moedas
+      2. Destaques de valorização/desvalorização  
+      3. Contexto para decisões de negócio
+      4. Alertas importantes
+      
+      Mantenha linguagem clara e acessível para executivos.
 ```
-Você é um analista financeiro experiente. Analise os dados de cotações 
-cambiais fornecidos e crie um resumo executivo conciso em português brasileiro.
 
-Inclua:
-1. Principais movimentações das moedas
-2. Destaques de valorização/desvalorização  
-3. Contexto para decisões de negócio
-4. Alertas importantes
-
-Mantenha linguagem clara e acessível para executivos.
-```
-
-### Exemplos de Insights Gerados
+### Exemplos de Insights Planejados
 - "O Euro está 5% mais valorizado em relação ao mês passado"
 - "A volatilidade do JPY em relação ao USD está acima da média"
 - "Recomenda-se cautela com operações em GBP devido à alta volatilidade"
+
+### Implementação Futura
+- ✅ Configuração OpenAI já preparada no `.env`
+- 🔄 Módulo `src/llm/insight_generator.py` 
+- 🔄 Prompts personalizáveis via YAML
+- 🔄 Geração de relatórios em `outputs/reports/`
+- 🔄 Logging de prompts para auditoria
 
 ---
 
 ## 🧪 Testes e Qualidade
 
-### Cobertura de Testes
-- ✅ Testes unitários para cada módulo
-- ✅ Validação de taxas numéricas
-- ✅ Testes de integração com APIs
-- ✅ Mocking para chamadas externas
+### Cobertura de Testes ✅ IMPLEMENTADO
+- ✅ Testes unitários completos para módulo de ingestão
+- ✅ Validação de taxas numéricas e estrutura da API
+- ✅ Testes de integração com mocks para APIs externas
+- ✅ Mocking para chamadas HTTP e sistema de arquivos
+- ✅ Testes de cenários de erro (timeout, conexão, HTTP errors)
+- ✅ Fixtures para dados de teste padronizados
 
-### Logging Estruturado
+### Casos de Teste Implementados
 ```python
-import structlog
-
-logger = structlog.get_logger()
-logger.info("Pipeline iniciado", stage="ingest", timestamp="2023-09-13T10:00:00Z")
+# Exemplos de testes implementados:
+- test_init_with_parameters()                    # Inicialização do cliente
+- test_validate_api_response_success()           # Validação de resposta válida  
+- test_validate_api_response_missing_field()     # Campos obrigatórios faltando
+- test_get_latest_rates_success()               # Coleta bem-sucedida
+- test_get_latest_rates_retry_on_timeout()      # Sistema de retry
+- test_collect_and_save_daily_rates_success()   # Salvamento de dados
 ```
 
-### Validação de Dados
+### Executar Testes
+```bash
+# Todos os testes
+pytest
+
+# Testes específicos com detalhes
+pytest tests/unit/test_ingest.py -v
+
+# Com coverage
+pytest --cov=src --cov-report=html
+
+# Testes de integração (quando disponíveis)
+pytest tests/integration/ -v
+```
+
+### Logging Estruturado ✅ IMPLEMENTADO
+```python
+# Exemplo de logs gerados:
+{
+  "event": "Cotações coletadas com sucesso", 
+  "base_currency": "USD",
+  "num_rates": 163,
+  "last_update": "Thu, 11 Sep 2025 00:00:01 +0000",
+  "timestamp": "2025-09-11T19:52:12.123456",
+  "logger": "ExchangeRateAPIClient"
+}
+
+# Configuração flexível
+logger = structlog.get_logger()
+logger.info("Pipeline iniciado", stage="ingest", timestamp="2025-09-11T19:52:11Z")
+```
+
+### Níveis de Log Disponíveis
+- **DEBUG**: Detalhes técnicos, URLs de requisições, payloads
+- **INFO**: Fluxo normal, sucessos, métricas principais  
+- **WARNING**: Retries, situações recuperáveis
+- **ERROR**: Falhas críticas, exceções não tratadas
+
+### Formatos de Log
+- **Console**: Colorido, para desenvolvimento (`--log-format console`)
+- **JSON**: Estruturado, para produção (`--log-format json`)
+
+### Validação de Dados ✅ IMPLEMENTADO
 ```python
 from pydantic import BaseModel, validator
 
@@ -390,12 +538,17 @@ class ExchangeRate(BaseModel):
 - [x] Dependências instaladas
 - [x] Arquivos de configuração
 
-### 🔄 Fase 2 - Ingestão (Próxima)
-- [ ] Módulo de coleta da API
-- [ ] Sistema de retry e error handling
-- [ ] Validação de resposta da API
+### ✅ Fase 2 - Ingestão (Concluída)
+- [x] Módulo de coleta da API (`ExchangeRateAPIClient`)
+- [x] Sistema de retry e error handling
+- [x] Validação de resposta da API
+- [x] Armazenamento em JSON com nomenclatura padronizada
+- [x] Sistema de logging estruturado
+- [x] Testes unitários completos
+- [x] Script principal com argumentos CLI
+- [x] Integração com variáveis de ambiente
 
-### 🔄 Fase 3 - Transformação
+### 🔄 Fase 3 - Transformação (Próxima)
 - [ ] Normalização de dados
 - [ ] Validações de qualidade
 - [ ] Processamento para Silver layer
@@ -427,18 +580,42 @@ class ExchangeRate(BaseModel):
 pip install fastparquet
 ```
 
-#### Erro de API Key
+#### Erro de API Key  
 ```bash
 # Verifique se o arquivo .env está configurado
-cat .env | grep EXCHANGE_API_KEY
+type .env | findstr EXCHANGE_API_KEY  # Windows
+# cat .env | grep EXCHANGE_API_KEY    # Linux/Mac
+
+# Se não existir, copie o template
+copy .env.template .env
 ```
 
 #### Erro de Parsing no PowerShell
 ```bash
-# Execute comandos individualmente
+# Execute comandos individualmente  
 pip install requests
 pip install pandas
+pip install python-dotenv
 # ... um por vez
+```
+
+#### Erro "ModuleNotFoundError"
+```bash
+# Certifique-se de estar no diretório correto e com venv ativado
+cd "C:\Users\lcs15\.bootcamp\pipeline-cotacoes-cambiais"
+venv\Scripts\activate
+
+# Verifique se src está no path
+python -c "import sys; print('\n'.join(sys.path))"
+```
+
+#### Logs de Debug
+```bash
+# Para troubleshooting detalhado
+python main.py --stage ingest --log-level DEBUG --log-format console
+
+# Verificar arquivo de log
+type logs\pipeline_$(Get-Date -Format "yyyyMMdd").log  # PowerShell
 ```
 
 ---
