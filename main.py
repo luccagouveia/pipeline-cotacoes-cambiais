@@ -196,9 +196,53 @@ def run_transform_stage(args, logger, input_file=None):
     Returns:
         str: Caminho do arquivo transformado
     """
-    logger.info("=== ETAPA DE TRANSFORMAÇÃO (PLACEHOLDER) ===")
-    logger.info("Esta etapa será implementada na Fase 3")
-    return None
+    logger.info("=== INICIANDO ETAPA DE TRANSFORMAÇÃO ===")
+    
+    try:
+        from src.transform.data_processor import DataTransformer
+        
+        # Determinar data alvo
+        target_date = date.fromisoformat(args.date) if args.date else date.today()
+        
+        # Inicializar transformer
+        raw_path = Path(args.output_path) / 'raw'
+        silver_path = Path(args.output_path) / 'silver'
+        
+        transformer = DataTransformer(
+            raw_data_path=str(raw_path),
+            silver_data_path=str(silver_path)
+        )
+        
+        # Processar transformação
+        report = transformer.process_date(target_date)
+        
+        if report['status'] == 'success':
+            logger.info(
+                "Etapa de transformação concluída com sucesso",
+                output_file=report['output']['silver_file'],
+                target_date=target_date.isoformat(),
+                final_records=report['output']['final_records'],
+                quality_score=report['quality']['overall_quality_score'],
+                execution_time=report['execution_time_seconds']
+            )
+            
+            return report['output']['silver_file']
+        else:
+            logger.error(
+                "Falha na etapa de transformação",
+                error=report['error'],
+                target_date=target_date.isoformat()
+            )
+            raise Exception(f"Transformação falhou: {report['error']}")
+        
+    except Exception as e:
+        logger.error(
+            "Erro na etapa de transformação",
+            error=str(e),
+            error_type=type(e).__name__,
+            target_date=args.date or "hoje"
+        )
+        raise
 
 
 def run_load_stage(args, logger, input_file=None):

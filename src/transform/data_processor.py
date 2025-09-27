@@ -364,7 +364,13 @@ class DataTransformer:
         logger.info("Criando DataFrame", total_records=len(validated_records))
         
         # Converter registros Pydantic para dicts
-        records_dict = [record.dict() for record in validated_records]
+        records_dict = []
+        for record in validated_records:
+            # Compatibilidade Pydantic v1/v2
+            if hasattr(record, 'model_dump'):
+                records_dict.append(record.model_dump())  # v2
+            else:
+                records_dict.append(record.dict())  # v1
         
         # Criar DataFrame
         df = pd.DataFrame(records_dict)
@@ -385,11 +391,11 @@ class DataTransformer:
         """
         Otimiza tipos de dados do DataFrame
         """
-        # Converter strings para categoria (economia de memória)
-        categorical_columns = ['base_currency', 'target_currency', 'pipeline_version']
-        for col in categorical_columns:
-            if col in df.columns:
-                df[col] = df[col].astype('category')
+        # REMOVIDO: Conversão para categoria que estava causando erro
+        # categorical_columns = ['base_currency', 'target_currency', 'pipeline_version']
+        # for col in categorical_columns:
+        #     if col in df.columns:
+        #         df[col] = df[col].astype('category')
         
         # Converter exchange_rate para float32 (suficiente para taxas)
         if 'exchange_rate' in df.columns:

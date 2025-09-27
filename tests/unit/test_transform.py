@@ -326,3 +326,301 @@ class TestDataTransformer:
         records = [
             {
                 'base_currency': 'USD',
+                'target_currency': 'BRL',
+                'exchange_rate': 5.1234,
+                'collection_timestamp': datetime(2024, 1, 15, 10, 30, 0),
+                'collection_date': date(2024, 1, 15),
+                'last_update_timestamp': datetime(2024, 1, 15, 10, 0, 0),
+                'pipeline_version': '1.0.0'
+            },
+            {
+                'base_currency': 'USD',
+                'target_currency': 'EUR',
+                'exchange_rate': 0.8456,
+                'collection_timestamp': datetime(2024, 1, 15, 10, 30, 0),
+                'collection_date': date(2024, 1, 15),
+                'last_update_timestamp': datetime(2024, 1, 15, 10, 0, 0),
+                'pipeline_version': '1.0.0'
+            }
+        ]
+        
+        validated_records = self.transformer.validate_records(records)
+        
+        assert len(validated_records) == 2
+        assert all(isinstance(record, ExchangeRateRecord) for record in validated_records)
+        assert validated_records[0].base_currency == 'USD'
+        assert validated_records[0].target_currency == 'BRL'
+    
+    def test_validate_records_with_invalid_data(self):
+        """
+        Testa validação com dados inválidos
+        """
+        records = [
+            {
+                'base_currency': 'USD',
+                'target_currency': 'BRL',
+                'exchange_rate': 5.1234,
+                'collection_timestamp': datetime(2024, 1, 15, 10, 30, 0),
+                'collection_date': date(2024, 1, 15),
+                'last_update_timestamp': datetime(2024, 1, 15, 10, 0, 0),
+                'pipeline_version': '1.0.0'
+            },
+            {
+                'base_currency': 'USD',
+                'target_currency': 'XX',  # Código inválido
+                'exchange_rate': -0.8456,  # Taxa negativa
+                'collection_timestamp': datetime(2024, 1, 15, 10, 30, 0),
+                'collection_date': date(2024, 1, 15),
+                'last_update_timestamp': datetime(2024, 1, 15, 10, 0, 0),
+                'pipeline_version': '1.0.0'
+            }
+        ]
+        
+        validated_records = self.transformer.validate_records(records)
+        
+        # Apenas o primeiro registro deve ser válido
+        assert len(validated_records) == 1
+        assert validated_records[0].target_currency == 'BRL'
+    
+    def test_create_dataframe(self):
+        """
+        Testa criação de DataFrame
+        """
+        validated_records = [
+            ExchangeRateRecord(
+                base_currency='USD',
+                target_currency='BRL',
+                exchange_rate=5.1234,
+                collection_timestamp=datetime(2024, 1, 15, 10, 30, 0),
+                collection_date=date(2024, 1, 15),
+                last_update_timestamp=datetime(2024, 1, 15, 10, 0, 0),
+                pipeline_version='1.0.0'
+            )
+        ]
+        
+        df = self.transformer.create_dataframe(validated_records)
+        
+        assert len(df) == 1
+        assert 'base_currency' in df.columns
+        assert 'target_currency' in df.columns
+        assert 'exchange_rate' in df.columns
+        assert df.iloc[0]['base_currency'] == 'USD'
+        assert df.iloc[0]['target_currency'] == 'BRL'
+    
+    @patch('pandas.DataFrame.to_parquet')
+    def test_save_to_parquet(self, mock_to_parquet):
+        """
+        Testa salvamento em formato Parquet
+        """
+        df = pd.DataFrame({
+            'base_currency': ['USD'],
+            'target_currency': ['BRL'],
+            'exchange_rate': [5.1234]
+        })
+        
+        # Mock do arquivo salvo
+        expected_path = self.silver_path / "exchange_rates_2024-01-15.parquet"
+        with patch('pathlib.Path.stat') as mock_stat:
+            mock_stat.return_value.st_size = 1024  # 1KB
+            
+            result_path = self.transformer.save_to_parquet(df, '2024-01-15')
+        
+        assert str(expected_path) in result_path
+        mock_to_parquet.assert_called_once()
+    
+    def test_process_date_integration(self):
+        """
+        Testa processamento completo de uma data (teste de integração)
+        """
+        date_str = '2024-01-15'
+        self.create_sample_raw_data(date_str)
+        
+        with patch('pandas.DataFrame.to_parquet') as mock_to_parquet:
+            with patch('pathlib.Path.stat') as mock_stat:
+                mock_stat.return_value.st_size = 2048
+                
+                report = self.transformer.process_date(date_str)
+        
+        assert report['status'] == 'success'
+        assert report['target_date'] == date_str
+        assert 'execution_time_seconds' in report
+        assert report['processing']['validated_records'] > 0
+        assert report['quality']['overall_quality_score'] > 0
+
+
+class TestCurrencyValidator:
+    """
+    Testes para CurrencyValidator
+    """
+    
+    def test_is_valid_currency_code_valid(self):
+        """
+        Testa validação de códigos de moeda válidos
+        """
+        valid_codes = ['USD', 'EUR', 'BRL', 'GBP', 'JPY']
+        
+        for code in valid_codes:
+            assert CurrencyValidator.is_valid_currency_code(code)
+            assert CurrencyValidator.is_valid_currency_code(code.lower())  # Case insensitive
+    
+    def test_is_valid_currency_code_invalid(self):
+        """
+        Testa validação de códigos de moeda inválidos
+        """
+        invalid_codes = ['US', 'USDX', '123', 'XX1', '', None, 'XYZ']
+        
+        for code in invalid_codes:
+            assert not CurrencyValidator.is_valid_currency_code(code)
+    
+    def test_validate_currency_pair_success(self):
+        """
+        Testa validação bem-sucedida de par de moedas
+        """
+        is_valid, errors = CurrencyValidator.validate_currency_pair('USD', 'BRL')
+        
+        assert is_valid
+        assert len(errors) == 0
+    
+    def test_validate_currency_pair_same_currencies(self):
+        """
+        Testa validação de par com moedas iguais
+        """
+        is_valid, errors = CurrencyValidator.validate_currency_pair('USD', 'USD')
+        
+        assert not is_valid
+        assert any('não podem ser iguais' in error for error in errors)
+
+
+class TestExchangeRateValidator:
+    """
+    Testes para ExchangeRateValidator
+    """
+    
+    def test_is_valid_rate_valid_rates(self):
+        """
+        Testa validação de taxas válidas
+        """
+        valid_rates = [0.1, 1.0, 5.1234, 100.5, 999.99]
+        
+        for rate in valid_rates:
+            assert ExchangeRateValidator.is_valid_rate(rate)
+    
+    def test_is_valid_rate_invalid_rates(self):
+        """
+        Testa validação de taxas inválidas
+        """
+        invalid_rates = [-1.0, 0.0, float('inf'), float('nan'), 2000000.0]
+        
+        for rate in invalid_rates:
+            assert not ExchangeRateValidator.is_valid_rate(rate)
+    
+    def test_detect_outliers_iqr(self):
+        """
+        Testa detecção de outliers usando IQR
+        """
+        rates = pd.Series([1.0, 1.1, 1.2, 1.3, 1.4, 10.0])  # 10.0 é outlier
+        
+        outliers = ExchangeRateValidator.detect_outliers(rates, method='iqr')
+        
+        assert outliers.iloc[-1]  # Último valor deve ser outlier
+        assert not outliers.iloc[0]  # Primeiro valor não deve ser outlier
+    
+    def test_detect_outliers_zscore(self):
+        """
+        Testa detecção de outliers usando Z-score
+        """
+        rates = pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 5.0])  # 5.0 é outlier
+        
+        outliers = ExchangeRateValidator.detect_outliers(rates, method='zscore')
+        
+        assert outliers.iloc[-1]  # Último valor deve ser outlier
+
+
+class TestTimestampValidator:
+    """
+    Testes para TimestampValidator
+    """
+    
+    def test_is_valid_timestamp_valid(self):
+        """
+        Testa validação de timestamps válidos
+        """
+        valid_timestamps = [
+            datetime(2024, 1, 15, 10, 30, 0),
+            datetime(2023, 12, 31, 23, 59, 59),
+            datetime(2025, 6, 15, 12, 0, 0)
+        ]
+        
+        for ts in valid_timestamps:
+            assert TimestampValidator.is_valid_timestamp(ts)
+    
+    def test_is_valid_timestamp_invalid(self):
+        """
+        Testa validação de timestamps inválidos
+        """
+        invalid_timestamps = [
+            datetime(1999, 1, 1, 0, 0, 0),  # Muito antigo
+            datetime(2031, 1, 1, 0, 0, 0),  # Muito futuro
+            "2024-01-15",  # Não é datetime
+            None
+        ]
+        
+        for ts in invalid_timestamps:
+            assert not TimestampValidator.is_valid_timestamp(ts)
+    
+    def test_is_reasonable_collection_time(self):
+        """
+        Testa validação de tempo de coleta razoável
+        """
+        update_ts = datetime(2024, 1, 15, 10, 0, 0)
+        collection_ts = datetime(2024, 1, 15, 10, 30, 0)  # 30 min depois
+        
+        assert TimestampValidator.is_reasonable_collection_time(collection_ts, update_ts)
+        
+        # Teste com diferença muito grande
+        old_update_ts = datetime(2024, 1, 1, 10, 0, 0)  # 2 semanas antes
+        assert not TimestampValidator.is_reasonable_collection_time(collection_ts, old_update_ts)
+
+
+# Fixtures para testes
+@pytest.fixture
+def sample_dataframe():
+    """
+    Fixture com DataFrame de exemplo
+    """
+    return pd.DataFrame({
+        'base_currency': ['USD', 'USD', 'USD'],
+        'target_currency': ['BRL', 'EUR', 'GBP'],
+        'exchange_rate': [5.1234, 0.8456, 0.7890],
+        'collection_timestamp': [datetime(2024, 1, 15, 10, 30, 0)] * 3,
+        'collection_date': [date(2024, 1, 15)] * 3,
+        'last_update_timestamp': [datetime(2024, 1, 15, 10, 0, 0)] * 3,
+        'pipeline_version': ['1.0.0'] * 3
+    })
+
+
+@pytest.fixture
+def sample_raw_data():
+    """
+    Fixture com dados brutos de exemplo
+    """
+    return {
+        'pipeline_metadata': {
+            'collection_timestamp': '2024-01-15T10:30:00.123456',
+            'collection_date': '2024-01-15',
+            'base_currency': 'USD',
+            'pipeline_version': '1.0.0'
+        },
+        'api_response': {
+            'result': 'success',
+            'time_last_update_unix': 1705305600,
+            'base_code': 'USD',
+            'conversion_rates': {
+                'BRL': 5.1234,
+                'EUR': 0.8456,
+                'GBP': 0.7890,
+                'JPY': 149.52,
+                'CAD': 1.3245
+            }
+        }
+    }
