@@ -247,7 +247,7 @@ def run_transform_stage(args, logger, input_file=None):
 
 def run_load_stage(args, logger, input_file=None):
     """
-    Executa etapa de carga
+    Executa etapa de carga (Gold Layer)
     
     Args:
         args: Argumentos processados
@@ -255,11 +255,66 @@ def run_load_stage(args, logger, input_file=None):
         input_file: Arquivo de entrada (opcional)
         
     Returns:
-        str: Caminho do arquivo final
+        str: Relatório do processamento
     """
-    logger.info("=== ETAPA DE CARGA (PLACEHOLDER) ===")
-    logger.info("Esta etapa será implementada na Fase 4")
-    return None
+    logger.info("=== INICIANDO ETAPA DE CARGA (GOLD LAYER) ===")
+    
+    try:
+        from src.load.gold_processor import GoldLayerProcessor
+        
+        # Determinar data alvo
+        target_date = date.fromisoformat(args.date) if args.date else date.today()
+        
+        # Inicializar processor
+        silver_path = Path(args.output_path) / 'silver'
+        gold_path = Path(args.output_path) / 'gold'
+        
+        processor = GoldLayerProcessor(
+            silver_path=str(silver_path),
+            gold_path=str(gold_path)
+        )
+        
+        # Processar Gold Layer (30 dias de histórico)
+        report = processor.process_gold_layer(target_date, days_back=30)
+        
+        if report['status'] == 'success':
+            logger.info(
+                "Etapa de carga concluída com sucesso",
+                target_date=target_date.isoformat(),
+                files_created=report['output']['total_files'],
+                currencies_analyzed=report['processing']['currencies_analyzed'],
+                execution_time=report['execution_time_seconds']
+            )
+            
+            # Mostrar insights principais
+            overview = report['insights']['market_overview']
+            
+            logger.info(
+                "Insights principais",
+                currencies_analyzed=overview['total_currencies'],
+                days_analyzed=overview['days_analyzed'],
+                min_rate=f"{overview['rate_statistics']['min_rate']:.4f}",
+                max_rate=f"{overview['rate_statistics']['max_rate']:.4f}",
+                data_quality=overview['market_sentiment']['data_quality']
+            )
+            
+            return report['output']['files_created']['consolidated']
+        else:
+            logger.error(
+                "Falha na etapa de carga",
+                error=report['error'],
+                target_date=target_date.isoformat()
+            )
+            raise Exception(f"Carga falhou: {report['error']}")
+        
+    except Exception as e:
+        logger.error(
+            "Erro na etapa de carga",
+            error=str(e),
+            error_type=type(e).__name__,
+            target_date=args.date or "hoje"
+        )
+        raise
 
 
 def run_llm_stage(args, logger, input_file=None):
