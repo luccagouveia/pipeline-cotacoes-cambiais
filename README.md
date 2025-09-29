@@ -2,8 +2,12 @@
 
 **Projeto Final - MBA em Data Engineering**  
 *Python Programming for Data Engineers*  
+   
 Elaborado por:
-  Lucas Alves Gouveia RA: 
+- Lucas Alves Gouveia
+- Kauan Gomes
+- Carina de Oliveira
+
 Professor: Eduardo Miranda
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
@@ -20,7 +24,7 @@ Este projeto implementa um pipeline de dados completo para coleta, processamento
 2. **Processar e validar** os dados em camadas estruturadas (raw, silver, gold)
 3. **Integrar com LLM** (ChatGPT) para gerar resumos e insights executivos
 4. **Implementar** testes unitários, logging estruturado e observabilidade
-5. **Visualizar** resultados através de dashboard interativo
+5. **Visualizar** resultados através de dashboard interativo com dados em tempo real
 
 ---
 
@@ -49,7 +53,7 @@ pipeline-cotacoes-cambiais/
 ├── 📁 outputs/                 # Relatórios e insights da LLM
 │   └── 📁 reports/             # Relatórios executivos
 │
-├── 📄 streamlit_app.py         # Dashboard interativo
+├── 📄 streamlit_app.py         # Dashboard interativo (ATUALIZAÇÃO AUTOMÁTICA)
 ├── 📄 main.py                  # Script principal do pipeline
 ├── 📄 requirements.txt         # Dependências Python
 ├── 📄 requirements_streamlit.txt  # Dependências Streamlit Cloud
@@ -224,7 +228,16 @@ streamlit run streamlit_app.py
 ```
 
 #### Acesso Online
-Dashboard público disponível no Streamlit Cloud (após deploy).
+Dashboard público disponível no Streamlit Cloud com **atualização automática de dados**.
+
+### 🔄 Atualização do Dashboard
+
+O dashboard agora possui **integração dinâmica** com os dados do pipeline:
+
+1. **Automático**: Execute o pipeline com `python main.py --stage all`
+2. **Dashboard**: Automaticamente detecta novos arquivos no Gold Layer
+3. **Timestamps Reais**: Todas as datas e métricas são atualizadas dinamicamente
+4. **Status em Tempo Real**: Indicadores de última execução e status dos componentes
 
 ### Testes
 ```bash
@@ -275,9 +288,10 @@ pytest tests/unit/test_transform.py -v
 
 1. **Visão Geral**
    - Status das 5 fases do pipeline
-   - Métricas principais (163 moedas, qualidade 98.5%)
+   - Métricas principais em tempo real (moedas analisadas, última atualização)
    - Arquitetura do sistema
    - Tecnologias utilizadas
+   - ⚡ **NOVO**: Indicador de dados reais vs dados de exemplo
 
 2. **Análise de Mercado**
    - Gráficos interativos das cotações
@@ -290,6 +304,7 @@ pytest tests/unit/test_transform.py -v
    - Estatísticas por moeda
    - Filtros por tendência/volatilidade
    - Exportação de dados
+   - ✅ **CORRIGIDO**: Erro matplotlib resolvido
 
 4. **Relatórios LLM**
    - Resumo executivo gerado por IA
@@ -298,10 +313,20 @@ pytest tests/unit/test_transform.py -v
    - Download de relatórios
 
 5. **Pipeline Status**
+   - ⚡ **NOVO**: Log de execuções reais do Gold Layer
+   - ⚡ **NOVO**: Timestamp da última execução
+   - ⚡ **NOVO**: Status real dos componentes (Raw/Silver/Gold Layer)
    - Métricas de performance
-   - Log de execuções
-   - Status dos componentes
    - Configurações atuais
+
+### 🆕 Novidades do Dashboard v2.0
+
+- ✅ **Atualização Automática**: Dashboard detecta automaticamente novos dados do pipeline
+- ✅ **Timestamps Reais**: Todas as datas refletem as execuções reais do pipeline
+- ✅ **Log Dinâmico**: Histórico das últimas 5 execuções com métricas reais
+- ✅ **Status Inteligente**: Verifica existência de arquivos Raw/Silver/Gold Layer
+- ✅ **Correção matplotlib**: Removido `background_gradient` incompatível com Streamlit Cloud
+- ✅ **Fallback Inteligente**: Exibe dados de exemplo se o pipeline não foi executado
 
 ---
 
@@ -384,11 +409,14 @@ pytest tests/unit/test_ingest.py -v      # Específico
 - [x] Análise técnica
 - [x] Relatórios múltiplos formatos
 
-### ✅ Fase 6 - Dashboard (Concluída)
+### ✅ Fase 6 - Dashboard v2.0 (Concluída)
 - [x] Interface Streamlit
 - [x] 5 páginas interativas
 - [x] Gráficos Plotly
 - [x] Deploy Streamlit Cloud
+- [x] **Atualização automática de dados**
+- [x] **Timestamps e métricas reais**
+- [x] **Correção erro matplotlib**
 
 ---
 
@@ -397,10 +425,17 @@ pytest tests/unit/test_ingest.py -v      # Específico
 ### Erro de API Key
 ```bash
 type .env | findstr EXCHANGE_API_KEY  # Windows
+cat .env | grep EXCHANGE_API_KEY      # Linux/Mac
 ```
 
-### Erro de Importação Plotly (Streamlit)
-Dashboard possui fallback para gráficos nativos Streamlit.
+### Dashboard não atualiza
+1. Execute o pipeline: `python main.py --stage all`
+2. Verifique se os arquivos foram gerados em `data/gold/`
+3. Aguarde alguns segundos e recarregue o dashboard
+4. O dashboard detecta automaticamente novos arquivos
+
+### Erro matplotlib (RESOLVIDO)
+O erro `background_gradient requires matplotlib` foi corrigido na versão 2.0 do dashboard.
 
 ### Pipeline Completo
 ```bash
@@ -423,7 +458,7 @@ python main.py --stage all --log-level DEBUG
 
 ### Requisitos para Deploy
 - `requirements_streamlit.txt` (dependências otimizadas)
-- `streamlit_app.py` (arquivo principal)
+- `streamlit_app.py` (arquivo principal v2.0)
 - Branch `main` atualizado
 
 ---
@@ -435,6 +470,7 @@ Para dúvidas ou problemas:
 2. Execute os testes: `pytest`
 3. Consulte a documentação da API
 4. Verifique arquivos gerados em `/data/`
+5. Confirme que o pipeline foi executado com sucesso
 
 ---
 
@@ -447,7 +483,8 @@ Este projeto é desenvolvido para fins acadêmicos como parte do MBA em Data Eng
 ## 🎯 Status do Projeto
 
 **Status**: 🟢 **100% COMPLETO E FUNCIONAL**  
-**Última Atualização**: 28 Setembro 2025  
+**Última Atualização**: 29 Setembro 2025  
+**Versão Dashboard**: v2.0 (Com atualização automática)  
 **Próxima Etapa**: Apresentação Final
 
 ---
@@ -461,7 +498,7 @@ Este projeto é desenvolvido para fins acadêmicos como parte do MBA em Data Eng
 - ✅ **Fase 3** - Transformação (100%)
 - ✅ **Fase 4** - Carga (100%)
 - ✅ **Fase 5** - LLM Integration (100%)
-- ✅ **Fase 6** - Dashboard (100%)
+- ✅ **Fase 6** - Dashboard v2.0 (100%)
 
 ### 🎯 Resultados Finais
 
@@ -473,9 +510,9 @@ Este projeto é desenvolvido para fins acadêmicos como parte do MBA em Data Eng
 - **LLM**: ~2.3s (insights executivos)
 
 #### Arquivos Gerados por Execução
-1. Raw: `2025-09-28.json` (4.26KB)
-2. Silver: `exchange_rates_2025-09-28.parquet`
-3-7. Gold Layer: 5 arquivos analíticos
+1. Raw: `YYYY-MM-DD.json` (4.26KB)
+2. Silver: `exchange_rates_YYYY-MM-DD.parquet`
+3-7. Gold Layer: 5 arquivos analíticos com timestamps
 8-10. LLM Reports: 3 formatos de relatório
 
 #### Qualidade de Dados
@@ -487,7 +524,9 @@ Este projeto é desenvolvido para fins acadêmicos como parte do MBA em Data Eng
 #### Funcionalidades Entregues
 - ✅ Pipeline Raw → Silver → Gold completo
 - ✅ Integração OpenAI para insights
-- ✅ Dashboard interativo web
+- ✅ Dashboard interativo web v2.0
+- ✅ **Atualização automática de dados**
+- ✅ **Timestamps e métricas em tempo real**
 - ✅ Sistema robusto de validação
 - ✅ Logging estruturado profissional
 - ✅ Testes unitários abrangentes
@@ -496,13 +535,34 @@ Este projeto é desenvolvido para fins acadêmicos como parte do MBA em Data Eng
 
 ---
 
+## 🆕 Changelog v2.0
+
+### Dashboard Improvements
+- ✅ Atualização automática de dados do Gold Layer
+- ✅ Timestamps reais em todas as métricas
+- ✅ Log dinâmico das últimas 5 execuções
+- ✅ Status real dos componentes (Raw/Silver/Gold)
+- ✅ Correção do erro `background_gradient requires matplotlib`
+- ✅ Fallback inteligente para dados de exemplo
+- ✅ Indicadores visuais de tipo de dados (real vs exemplo)
+
+### Bug Fixes
+- 🐛 Corrigido erro matplotlib no Streamlit Cloud
+- 🐛 Datas estáticas substituídas por timestamps dinâmicos
+- 🐛 Log de execuções agora reflete dados reais
+
+---
+
 **Projeto pronto para apresentação acadêmica e uso em produção!**
 
 ---
 
-## 👨‍💻 Autor
+## 👨‍💻 Autores
 
-**Lucca Gouveia**  
+**Lucas Alves Gouveia**  
+**Kauan Gomes**  
+**Carina de Oliveira**  
+
 MBA em Data Engineering  
 Professor: Eduardo Miranda  
 Setembro 2025
