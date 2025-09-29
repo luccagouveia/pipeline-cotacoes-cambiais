@@ -75,11 +75,26 @@ page = st.sidebar.selectbox(
     ["🏠 Visão Geral", "📈 Análise de Mercado", "🔍 Dados Detalhados", "📋 Relatórios LLM", "⚙️ Pipeline Status"]
 )
 
-# Função para carregar dados
-@st.cache_data
-def load_sample_data():
-    """Carrega dados de exemplo para demonstração"""
-    # Dados de exemplo simulando o Gold Layer
+# Função para carregar dados reais ou de exemplo
+@st.cache_data(ttl=300)  # Cache por 5 minutos
+def load_gold_data():
+    """Carrega dados reais do Gold Layer ou dados de exemplo como fallback"""
+    gold_path = Path("data/gold")
+    
+    # Tentar carregar arquivo consolidated mais recente
+    if gold_path.exists():
+        consolidated_files = list(gold_path.glob("consolidated_*.parquet"))
+        if consolidated_files:
+            try:
+                latest_file = max(consolidated_files, key=lambda x: x.stat().st_mtime)
+                df = pd.read_parquet(latest_file)
+                st.sidebar.success(f"📊 Dados reais carregados: {latest_file.name}")
+                return df, 'real'
+            except Exception as e:
+                st.sidebar.warning(f"⚠️ Erro ao carregar dados reais: {e}")
+    
+    # Fallback: dados de exemplo
+    st.sidebar.info("📋 Usando dados de exemplo (execute o pipeline para dados reais)")
     currencies = ['BRL', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'MXN', 'KRW']
     
     data = {
@@ -92,11 +107,25 @@ def load_sample_data():
         'historical_max': [5.8234, 0.9534, 0.8123, 146.78, 1.4123, 1.5678, 0.8934, 7.4567, 18.5678, 1345.67]
     }
     
-    return pd.DataFrame(data)
+    return pd.DataFrame(data), 'sample'
 
-@st.cache_data  
+@st.cache_data(ttl=300)
 def load_market_overview():
-    """Carrega overview de mercado de exemplo"""
+    """Carrega overview de mercado real ou de exemplo"""
+    gold_path = Path("data/gold")
+    
+    # Tentar carregar market_overview real
+    if gold_path.exists():
+        overview_files = list(gold_path.glob("market_overview_*.json"))
+        if overview_files:
+            try:
+                latest_file = max(overview_files, key=lambda x: x.stat().st_mtime)
+                with open(latest_file, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                pass
+    
+    # Fallback: dados de exemplo
     return {
         'timestamp': datetime.now().isoformat(),
         'total_currencies': 163,
@@ -113,7 +142,7 @@ def load_market_overview():
     }
 
 # Carregar dados
-df = load_sample_data()
+df, data_source = load_gold_data()
 market_overview = load_market_overview()
 
 # Página: Visão Geral
