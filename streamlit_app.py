@@ -1,6 +1,8 @@
 """
-Dashboard Streamlit - Pipeline de Cotações Cambiais
+
 MBA em Data Engineering - Projeto Final
+Dashboard Streamlit - Pipeline de Cotações Cambiais com Python + LLM
+Disciplina: Python Programming for Data Engineers
 """
 
 import streamlit as st
@@ -318,14 +320,14 @@ elif page == "🔍 Dados Detalhados":
     
     # Tabela interativa
     st.dataframe(
-        filtered_df.style.format({
-            'current_rate': '{:.4f}',
-            'historical_min': '{:.4f}',
-            'historical_max': '{:.4f}'
-        }).background_gradient(subset=['current_rate']),
-        use_container_width=True,
-        height=400
-    )
+    filtered_df.style.format({
+        'current_rate': '{:.4f}',
+        'historical_min': '{:.4f}',
+        'historical_max': '{:.4f}'
+    }),
+    use_container_width=True,
+    height=400
+)
     
     # Estatísticas dos dados filtrados
     if len(filtered_df) > 0:
@@ -509,7 +511,8 @@ st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.9rem;'>
     <p>💻 <strong>Pipeline de Cotações Cambiais com Python + LLM</strong></p>
     <p>🎓 MBA em Data Engineering - Projeto Final</p>
-    <p>👨‍🏫 Professor: Eduardo Miranda | 📅 Setembro 2025</p>
+    <p>🎓 Disciplina: Python Programming for Data Engineers</p>
+    <p>👨‍🏫 Autor: Lucas Gouveia | 📅 Setembro 2025</p>
     <p>🚀 <em>Pipeline Completo: Raw → Silver → Gold → Insights</em></p>
 </div>
 """, unsafe_allow_html=True)
