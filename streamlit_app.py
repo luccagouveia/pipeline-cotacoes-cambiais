@@ -6,12 +6,19 @@ MBA em Data Engineering - Projeto Final
 import streamlit as st
 import pandas as pd
 import json
-import plotly.express as px
-import plotly.graph_objects as go
 from datetime import datetime, date, timedelta
 from pathlib import Path
 import sys
 import os
+
+# Tentar importar plotly, se falhar usar alternativas
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    HAS_PLOTLY = True
+except ImportError:
+    HAS_PLOTLY = False
+    st.warning("⚠️ Plotly não disponível. Usando gráficos alternativos.")
 
 # Configuração da página
 st.set_page_config(
@@ -181,20 +188,24 @@ elif page == "📈 Análise de Mercado":
     
     main_currencies = df[df['currency'].isin(['BRL', 'EUR', 'GBP', 'JPY', 'CAD'])].copy()
     
-    fig = px.bar(
-        main_currencies, 
-        x='currency', 
-        y='current_rate',
-        title="Cotações Principais vs USD",
-        color='trend_class',
-        color_discrete_map={
-            'Alta': '#28a745',
-            'Baixa': '#dc3545', 
-            'Estável': '#ffc107'
-        }
-    )
-    fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    if HAS_PLOTLY:
+        fig = px.bar(
+            main_currencies, 
+            x='currency', 
+            y='current_rate',
+            title="Cotações Principais vs USD",
+            color='trend_class',
+            color_discrete_map={
+                'Alta': '#28a745',
+                'Baixa': '#dc3545', 
+                'Estável': '#ffc107'
+            }
+        )
+        fig.update_layout(height=400)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        # Fallback usando gráfico nativo do Streamlit
+        st.bar_chart(main_currencies.set_index('currency')['current_rate'])
     
     # Distribuição de tendências
     col1, col2 = st.columns(2)
@@ -203,53 +214,68 @@ elif page == "📈 Análise de Mercado":
         st.subheader("📊 Distribuição de Tendências")
         trend_counts = df['trend_class'].value_counts()
         
-        fig_pie = px.pie(
-            values=trend_counts.values,
-            names=trend_counts.index,
-            title="Classificação de Tendências",
-            color_discrete_map={
-                'Alta': '#28a745',
-                'Baixa': '#dc3545',
-                'Estável': '#ffc107'
-            }
-        )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        if HAS_PLOTLY:
+            fig_pie = px.pie(
+                values=trend_counts.values,
+                names=trend_counts.index,
+                title="Classificação de Tendências",
+                color_discrete_map={
+                    'Alta': '#28a745',
+                    'Baixa': '#dc3545',
+                    'Estável': '#ffc107'
+                }
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
+        else:
+            # Fallback com métricas
+            for trend, count in trend_counts.items():
+                st.metric(f"Tendência {trend}", count)
     
     with col2:
         st.subheader("⚡ Distribuição de Volatilidade")
         vol_counts = df['volatility_class'].value_counts()
         
-        fig_vol = px.pie(
-            values=vol_counts.values,
-            names=vol_counts.index,
-            title="Classificação de Volatilidade",
-            color_discrete_map={
-                'Baixa': '#28a745',
-                'Moderada': '#ffc107',
-                'Alta': '#dc3545'
-            }
-        )
-        st.plotly_chart(fig_vol, use_container_width=True)
+        if HAS_PLOTLY:
+            fig_vol = px.pie(
+                values=vol_counts.values,
+                names=vol_counts.index,
+                title="Classificação de Volatilidade",
+                color_discrete_map={
+                    'Baixa': '#28a745',
+                    'Moderada': '#ffc107',
+                    'Alta': '#dc3545'
+                }
+            )
+            st.plotly_chart(fig_vol, use_container_width=True)
+        else:
+            # Fallback com métricas
+            for vol, count in vol_counts.items():
+                st.metric(f"Volatilidade {vol}", count)
     
     # Heat map de volatilidade
-    st.subheader("🔥 Mapa de Calor - Volatilidade vs Tendência")
-    
-    heatmap_data = df.pivot_table(
-        values='current_rate', 
-        index='volatility_class', 
-        columns='trend_class', 
-        aggfunc='count',
-        fill_value=0
-    )
-    
-    fig_heatmap = px.imshow(
-        heatmap_data.values,
-        x=heatmap_data.columns,
-        y=heatmap_data.index,
-        title="Correlação Volatilidade x Tendência",
-        color_continuous_scale='RdYlBu_r'
-    )
-    st.plotly_chart(fig_heatmap, use_container_width=True)
+    if HAS_PLOTLY:
+        st.subheader("🔥 Mapa de Calor - Volatilidade vs Tendência")
+        
+        heatmap_data = df.pivot_table(
+            values='current_rate', 
+            index='volatility_class', 
+            columns='trend_class', 
+            aggfunc='count',
+            fill_value=0
+        )
+        
+        fig_heatmap = px.imshow(
+            heatmap_data.values,
+            x=heatmap_data.columns,
+            y=heatmap_data.index,
+            title="Correlação Volatilidade x Tendência",
+            color_continuous_scale='RdYlBu_r'
+        )
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+    else:
+        st.subheader("📊 Tabela Cruzada - Volatilidade vs Tendência")
+        cross_table = pd.crosstab(df['volatility_class'], df['trend_class'])
+        st.dataframe(cross_table)
 
 # Página: Dados Detalhados
 elif page == "🔍 Dados Detalhados":
