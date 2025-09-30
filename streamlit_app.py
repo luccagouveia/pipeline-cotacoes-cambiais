@@ -1,5 +1,4 @@
 """
-
 MBA em Data Engineering - Projeto Final
 Dashboard Streamlit - Pipeline de Cotações Cambiais com Python + LLM
 Disciplina: Python Programming for Data Engineers
@@ -13,6 +12,13 @@ from pathlib import Path
 import sys
 import os
 
+# Configuração da página - DEVE SER A PRIMEIRA CHAMADA STREAMLIT
+st.set_page_config(
+    page_title="Pipeline Cotações Cambiais - MBA Data Engineering",
+    page_icon="💱",
+    layout="wide"
+)
+
 # Tentar importar plotly, se falhar usar alternativas
 try:
     import plotly.express as px
@@ -21,14 +27,6 @@ try:
 except ImportError:
     HAS_PLOTLY = False
     st.warning("⚠️ Plotly não disponível. Usando gráficos alternativos.")
-
-# Configuração da página
-st.set_page_config(
-    page_title="Pipeline Cotações Cambiais - MBA Data Engineering",
-    page_icon="💱",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # CSS customizado
 st.markdown("""
@@ -235,7 +233,6 @@ elif page == "📈 Análise de Mercado":
         fig.update_layout(height=400)
         st.plotly_chart(fig, use_container_width=True)
     else:
-        # Fallback usando gráfico nativo do Streamlit
         st.bar_chart(main_currencies.set_index('currency')['current_rate'])
     
     # Distribuição de tendências
@@ -258,7 +255,6 @@ elif page == "📈 Análise de Mercado":
             )
             st.plotly_chart(fig_pie, use_container_width=True)
         else:
-            # Fallback com métricas
             for trend, count in trend_counts.items():
                 st.metric(f"Tendência {trend}", count)
     
@@ -279,7 +275,6 @@ elif page == "📈 Análise de Mercado":
             )
             st.plotly_chart(fig_vol, use_container_width=True)
         else:
-            # Fallback com métricas
             for vol, count in vol_counts.items():
                 st.metric(f"Volatilidade {vol}", count)
     
@@ -320,14 +315,14 @@ elif page == "🔍 Dados Detalhados":
         selected_trends = st.multiselect(
             "Tendências:", 
             df['trend_class'].unique(),
-            default=df['trend_class'].unique()
+            default=list(df['trend_class'].unique())
         )
     
     with col2:
         selected_volatility = st.multiselect(
             "Volatilidade:",
             df['volatility_class'].unique(), 
-            default=df['volatility_class'].unique()
+            default=list(df['volatility_class'].unique())
         )
     
     with col3:
@@ -349,14 +344,14 @@ elif page == "🔍 Dados Detalhados":
     
     # Tabela interativa
     st.dataframe(
-    filtered_df.style.format({
-        'current_rate': '{:.4f}',
-        'historical_min': '{:.4f}',
-        'historical_max': '{:.4f}'
-    }),
-    use_container_width=True,
-    height=400
-)
+        filtered_df.style.format({
+            'current_rate': '{:.4f}',
+            'historical_min': '{:.4f}',
+            'historical_max': '{:.4f}'
+        }),
+        use_container_width=True,
+        height=400
+    )
     
     # Estatísticas dos dados filtrados
     if len(filtered_df) > 0:
@@ -373,14 +368,14 @@ elif page == "🔍 Dados Detalhados":
             st.metric(
                 "Taxa Máxima", 
                 f"{filtered_df['current_rate'].max():.4f}",
-                delta=f"{filtered_df['current_rate'].idxmax()}"
+                delta=f"{filtered_df.loc[filtered_df['current_rate'].idxmax(), 'currency']}"
             )
         
         with col3:
             st.metric(
                 "Taxa Mínima",
                 f"{filtered_df['current_rate'].min():.4f}",
-                delta=f"{filtered_df['current_rate'].idxmin()}"
+                delta=f"{filtered_df.loc[filtered_df['current_rate'].idxmin(), 'currency']}"
             )
 
 # Página: Relatórios LLM
@@ -541,7 +536,7 @@ st.markdown("""
     <p>💻 <strong>Pipeline de Cotações Cambiais com Python + LLM</strong></p>
     <p>🎓 MBA em Data Engineering - Projeto Final</p>
     <p>🎓 Disciplina: Python Programming for Data Engineers</p>
-    <p>👨‍🏫 Autor: Lucas Gouveia | 📅 Setembro 2025</p>
+    <p>👨‍🏫 Autores: Lucas Gouveia, Kauan Gomes, Carina de Oliveira | 📅 Setembro 2025</p>
     <p>🚀 <em>Pipeline Completo: Raw → Silver → Gold → Insights</em></p>
 </div>
 """, unsafe_allow_html=True)
