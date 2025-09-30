@@ -85,6 +85,12 @@ Exemplos de uso:
         help='Caminho base para dados (default: data)'
     )
     
+    parser.add_argument(
+        '--skip-llm-on-error',
+        action='store_true',
+        help='Continuar pipeline mesmo se LLM falhar'
+    )
+    
     return parser.parse_args()
 
 
@@ -327,11 +333,88 @@ def run_llm_stage(args, logger, input_file=None):
         input_file: Arquivo de entrada (opcional)
         
     Returns:
-        str: Caminho do relatório gerado
+        Dict: Relatório do processamento LLM
     """
-    logger.info("=== ETAPA DE INSIGHTS LLM (PLACEHOLDER) ===")
-    logger.info("Esta etapa será implementada na Fase 5")
-    return None
+    logger.info("=== INICIANDO ETAPA DE INSIGHTS LLM ===")
+    
+    try:
+        from src.llm.insight_generator import InsightGenerator
+        
+        # Determinar data alvo
+        target_date = date.fromisoformat(args.date) if args.date else date.today()
+        
+        # Inicializar generator
+        gold_path = Path(args.output_path) / 'gold'
+        outputs_path = Path('outputs/reports')
+        
+        generator = InsightGenerator(
+            gold_path=str(gold_path),
+            outputs_path=str(outputs_path)
+        )
+        
+        # Processar insights
+        report = generator.process_insights(target_date)
+        
+        if report['status'] == 'success':
+            logger.info(
+                "Etapa de insights LLM concluída com sucesso",
+                target_date=target_date.isoformat(),
+                files_created=report['output']['total_files'],
+                model_used=report['insights_preview']['model_used'],
+                execution_time=report['execution_time_seconds']
+            )
+            
+            # Mostrar preview dos insights
+            logger.info(
+                "Preview do resumo executivo",
+                preview=report['insights_preview']['summary_preview']
+            )
+            
+            # Listar arquivos criados
+            for file_type, file_path in report['output']['files_created'].items():
+                logger.info(f"Relatório {file_type} criado: {file_path}")
+            
+            return report['output']['files_created'].get('json_report')
+            
+        else:
+            logger.error(
+                "Falha na etapa de insights LLM",
+                error=report['error'],
+                target_date=target_date.isoformat()
+            )
+            
+            if args.skip_llm_on_error:
+                logger.warning("Continuando pipeline apesar do erro LLM (--skip-llm-on-error)")
+                return None
+            else:
+                raise Exception(f"Insights LLM falhou: {report['error']}")
+        
+    except ImportError as e:
+        logger.error(
+            "Módulo LLM não encontrado",
+            error=str(e),
+            suggestion="Verifique se src/llm/insight_generator.py existe"
+        )
+        
+        if args.skip_llm_on_error:
+            logger.warning("Continuando pipeline sem LLM")
+            return None
+        else:
+            raise
+            
+    except Exception as e:
+        logger.error(
+            "Erro na etapa de insights LLM",
+            error=str(e),
+            error_type=type(e).__name__,
+            target_date=args.date or "hoje"
+        )
+        
+        if args.skip_llm_on_error:
+            logger.warning("Continuando pipeline apesar do erro")
+            return None
+        else:
+            raise
 
 
 def main():
@@ -373,7 +456,7 @@ def main():
             output_file = run_load_stage(args, logger, output_file)
         
         if args.stage in ['llm', 'all']:
-            run_llm_stage(args, logger, output_file)
+            output_file = run_llm_stage(args, logger, output_file)
         
         # Log de conclusão
         logger.info(
