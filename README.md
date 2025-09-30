@@ -4,9 +4,9 @@
 *Python Programming for Data Engineers*  
    
 Elaborado por:
-- Lucas Alves Gouveia
-- Kauan Gomes
-- Carina de Oliveira
+- Lucas Alves Gouveia RA: 2500399
+- Kauan Gomes RA: 2502147
+- Carina de Oliveira RA: 2100205
 
 Professor: Eduardo Miranda
 
@@ -481,20 +481,20 @@ EXCHANGE_API_KEY não encontrada
 
 ## 🎯 Status do Projeto
 
-**Status**: ✅ **100% COMPLETO E FUNCIONAL**  
-**Data**: 30 Setembro 2025  
-**Versão**: 1.0.0
+   **Status**: ✅ **100% COMPLETO E FUNCIONAL**  
+   **Data**: 30 Setembro 2025  
+   **Versão**: 1.0.0
 
 ### Progresso por Fase
 
-| Fase | Status | Conclusão |
-|------|--------|-----------|
-| 1. Estruturação | ✅ Completa | 100% |
-| 2. Ingestão | ✅ Completa | 100% |
-| 3. Transformação | ✅ Completa | 100% |
-| 4. Carga (Gold) | ✅ Completa | 100% |
-| 5. LLM Integration | ✅ Completa | 100% |
-| 6. Dashboard | ✅ Completa | 100% |
+   | Fase | Status | Conclusão |
+   |------|--------|-----------|
+   | 1. Estruturação | ✅ Completa | 100% |
+   | 2. Ingestão | ✅ Completa | 100% |
+   | 3. Transformação | ✅ Completa | 100% |
+   | 4. Carga (Gold) | ✅ Completa | 100% |
+   | 5. LLM Integration | ✅ Completa | 100% |
+   | 6. Dashboard | ✅ Completa | 100% |
 
 **Todas as fases implementadas e integradas**
 
@@ -502,31 +502,31 @@ EXCHANGE_API_KEY não encontrada
 
 ## 🎓 Créditos Acadêmicos
 
-**Instituição**: MBA em Data Engineering na Faculdade Impacta de Tecnologia
-**Disciplina**: Python Programming for Data Engineers  
-**Professor**: Eduardo Miranda  
-**Data**: Setembro 2025
+   **Instituição**: MBA em Data Engineering na Faculdade Impacta de Tecnologia
+   **Disciplina**: Python Programming for Data Engineers  
+   **Professor**: Eduardo Miranda  
+   **Data**: Setembro 2025
 
 **Equipe**:
-- Lucas Alves Gouveia
-- Kauan Gomes
-- Carina de Oliveira
+   - Lucas Alves Gouveia
+   - Kauan Gomes
+   - Carina de Oliveira
 
 ---
 
 ## 📄 Licença
 
-Este projeto é desenvolvido para fins acadêmicos como parte do MBA em Data Engineering.
+   Este projeto é desenvolvido para fins acadêmicos como parte do MBA em Data Engineering.
 
 ---
 
 ## 🔗 Links Úteis
 
-- [Exchange Rate API Docs](https://www.exchangerate-api.com/docs)
-- [OpenAI API Reference](https://platform.openai.com/docs)
-- [Streamlit Documentation](https://docs.streamlit.io)
-- [Pydantic Guide](https://docs.pydantic.dev)
-- [Parquet Format](https://parquet.apache.org/docs)
+   - [Exchange Rate API Docs](https://www.exchangerate-api.com/docs)
+   - [OpenAI API Reference](https://platform.openai.com/docs)
+   - [Streamlit Documentation](https://docs.streamlit.io)
+   - [Pydantic Guide](https://docs.pydantic.dev)
+   - [Parquet Format](https://parquet.apache.org/docs)
 
 ---
 
